@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>포스터 카드 관제</title>
+    <style>
+      :root {
+        --paper: #f7f3ea;
+        --ink: #1a1a18;
+        --body: #6b6355;
+        --line: #ded6c4;
+        --faint: #8a8172;
+        --perf: #b8ae99;
+        --accent: #c4642a;
+        --warn: #b03a2e;
+        --ok: #4a7c59;
+        --bg: #e9e4d8;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 18px 16px 60px;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Pretendard", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "Malgun Gothic", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 760px; margin: 0 auto; }
+
+      header {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 10px; border-bottom: 1.5px solid var(--ink); padding-bottom: 8px;
+      }
+      h1 {
+        font-family: "Courier New", monospace;
+        font-size: 12px; font-weight: 700; letter-spacing: .2em;
+        text-transform: uppercase; margin: 0;
+      }
+      #updated {
+        font-family: "Courier New", monospace;
+        font-size: 10.5px; color: var(--faint); white-space: nowrap;
+      }
+
+      /* 요약 타일 */
+      .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; }
+      .tile {
+        background: var(--paper); border: 1px solid var(--perf);
+        padding: 12px 10px; text-align: center;
+      }
+      .tile small {
+        display: block; font-family: "Courier New", monospace;
+        font-size: 9px; font-weight: 700; letter-spacing: .14em;
+        color: var(--faint); margin-bottom: 5px;
+      }
+      .tile b {
+        font-family: "Courier New", monospace;
+        font-size: 26px; font-weight: 700; line-height: 1;
+      }
+      .tile span { font-size: 12px; color: var(--body); }
+      .tile.bad b { color: var(--warn); }
+      .tile.good b { color: var(--ok); }
+
+      /* 경고 */
+      #alerts:empty { display: none; }
+      .alert {
+        background: #f6e7e4; border: 1px solid var(--warn);
+        padding: 11px 13px; margin-bottom: 8px; font-size: 13px; line-height: 1.5;
+      }
+      .alert b { color: var(--warn); }
+      .alert .fix { display: block; margin-top: 4px; font-size: 11.5px; color: var(--body); }
+
+      /* 13칸 */
+      .sect {
+        font-family: "Courier New", monospace; font-size: 10px; font-weight: 700;
+        letter-spacing: .16em; color: var(--faint);
+        margin: 22px 0 9px; text-transform: uppercase;
+      }
+      .grid13 { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; }
+      @media (max-width: 420px) { .grid13 { grid-template-columns: repeat(5,1fr); } }
+      .cell {
+        aspect-ratio: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 2px;
+        border: 1px solid var(--perf); background: var(--paper);
+      }
+      .cell b { font-family: "Courier New", monospace; font-size: 17px; font-weight: 700; }
+      .cell small { font-family: "Courier New", monospace; font-size: 9px; color: var(--faint); }
+      .cell.none { border-style: dashed; background: transparent; }
+      .cell.none b { color: var(--perf); }
+      .cell.done { background: var(--ok); border-color: var(--ok); }
+      .cell.done b, .cell.done small { color: var(--paper); }
+
+      /* 표 */
+      table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+      th {
+        text-align: left; font-family: "Courier New", monospace;
+        font-size: 9.5px; letter-spacing: .1em; color: var(--faint);
+        font-weight: 700; padding: 0 6px 6px; border-bottom: 1px solid var(--perf);
+      }
+      td { padding: 9px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      td.no { font-family: "Courier New", monospace; font-weight: 700; width: 34px; }
+      td.re { font-family: "Courier New", monospace; text-align: right; width: 44px; white-space: nowrap; }
+      td.re.full { color: var(--ok); font-weight: 700; }
+      .nm { font-weight: 600; }
+      .sub { font-size: 11px; color: var(--faint); word-break: break-all; }
+      .sub a { color: var(--accent); }
+      tr.bad td { background: #f6e7e4; }
+
+      .foot { margin-top: 26px; font-size: 11.5px; color: var(--faint); line-height: 1.6; }
+      button {
+        font: inherit; font-size: 12px; padding: 7px 14px; cursor: pointer;
+        background: var(--ink); color: var(--paper); border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Poster Card · Live</h1>
+        <span id="updated">연결 중…</span>
+      </header>
+
+      <div class="stats">
+        <div class="tile" id="t-deploy"><small>배포</small><b>–</b><span>/ 13</span></div>
+        <div class="tile" id="t-react"><small>반응</small><b>–</b><span>/ 52</span></div>
+        <div class="tile" id="t-issue"><small>문제</small><b>–</b><span>건</span></div>
+      </div>
+
+      <div id="alerts"></div>
+
+      <p class="sect">번호별 현황</p>
+      <div class="grid13" id="grid"></div>
+
+      <p class="sect">등록된 카드</p>
+      <table>
+        <thead>
+          <tr><th>번호</th><th>카드</th><th style="text-align:right">반응</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+
+      <div class="foot">
+        <p>10초마다 자동 갱신 · 읽기 전용이라 이 페이지는 데이터를 바꾸지 않음</p>
+        <p>초록 = 반응 4개 이상 (미션 기준 충족) · 점선 = 미등록</p>
+        <button onclick="location.reload()">새로고침</button>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+      const SUPABASE_URL = "https://bijevqhxxiemyjijitga.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_DWpeZNloHhFWWsACvBfssw_bPLFiguP";
+      const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      const TOTAL = 13;
+      const PER_CARD = 4; // 각 카드는 4명의 루트에 들어 있음
+
+      const $ = (id) => document.getElementById(id);
+      const tile = (el, v, cls) => {
+        el.querySelector("b").textContent = v;
+        el.className = "tile" + (cls ? " " + cls : "");
+      };
+
+      async function load() {
+        let cards = [], reactions = [];
+        try {
+          const [c, r] = await Promise.all([
+            sb.from("cards").select("id, number, title, description, url, updated_at").order("number"),
+            sb.from("reactions").select("card_id"),
+          ]);
+          if (c.error) throw c.error;
+          if (r.error) throw r.error;
+          cards = c.data || [];
+          reactions = r.data || [];
+        } catch (e) {
+          $("updated").textContent = "연결 실패 — " + (e.message || e);
+          return;
+        }
+
+        // 카드별 반응 수
+        const count = {};
+        for (const row of reactions) count[row.card_id] = (count[row.card_id] || 0) + 1;
+
+        // 번호 → 카드들 (중복 가능)
+        const byNum = {};
+        for (const c of cards) (byNum[c.number] ||= []).push(c);
+
+        // ── 문제 찾기
+        const missing = [];
+        for (let n = 1; n <= TOTAL; n++) if (!byNum[n]) missing.push(n);
+        const dupes = Object.keys(byNum).filter((n) => byNum[n].length > 1).map(Number);
+        const locals = cards.filter((c) => !c.url || c.url.includes("localhost") || c.url.includes("127.0.0.1"));
+        const outOfRange = cards.filter((c) => c.number < 1 || c.number > TOTAL);
+        const issues = missing.length + dupes.length + locals.length + outOfRange.length;
+
+        // ── 요약
+        tile($("t-deploy"), cards.length, cards.length >= TOTAL ? "good" : "");
+        tile($("t-react"), reactions.length, reactions.length >= TOTAL * PER_CARD ? "good" : "");
+        tile($("t-issue"), issues, issues ? "bad" : "good");
+
+        // ── 경고
+        const a = [];
+        if (missing.length)
+          a.push(`<div class="alert"><b>빠진 번호 ${missing.join(", ")}</b> — 이 번호를 방문해야 하는 ${missing.length * PER_CARD}명이 숫자를 못 받음
+            <span class="fix">본인에게 배포 주소를 열게 하거나, 칠판에 숫자를 공개</span></div>`);
+        if (dupes.length)
+          a.push(`<div class="alert"><b>번호 중복 ${dupes.join(", ")}</b> — 두 명이 같은 자리 번호를 입력함
+            <span class="fix">한 명에게 다른 번호를 주고 config.js 고쳐서 다시 push</span></div>`);
+        if (locals.length)
+          a.push(`<div class="alert"><b>주소가 로컬인 카드 ${locals.length}건</b> — 눌러도 안 열림
+            <span class="fix">${locals.map((c) => c.number + "번").join(", ")} · 배포 주소를 한 번 열게 할 것</span></div>`);
+        if (outOfRange.length)
+          a.push(`<div class="alert"><b>범위 밖 번호</b> — ${outOfRange.map((c) => c.id + "(" + c.number + ")").join(", ")}
+            <span class="fix">1~13 사이여야 미션 숫자가 나옴</span></div>`);
+        $("alerts").innerHTML = a.join("");
+
+        // ── 13칸
+        let g = "";
+        for (let n = 1; n <= TOTAL; n++) {
+          const list = byNum[n];
+          if (!list) {
+            g += `<div class="cell none"><b>${n}</b><small>–</small></div>`;
+          } else {
+            const r = list.reduce((s, c) => s + (count[c.id] || 0), 0);
+            g += `<div class="cell ${r >= PER_CARD ? "done" : ""}"><b>${n}</b><small>${r}</small></div>`;
+          }
+        }
+        $("grid").innerHTML = g;
+
+        // ── 표
+        $("rows").innerHTML = cards.length
+          ? cards.map((c) => {
+              const r = count[c.id] || 0;
+              const bad = !c.url || c.url.includes("localhost") || (byNum[c.number] || []).length > 1;
+              return `<tr class="${bad ? "bad" : ""}">
+                <td class="no">${String(c.number).padStart(2, "0")}</td>
+                <td>
+                  <div class="nm">${esc(c.title) || "(제목 없음)"}</div>
+                  <div class="sub">${esc(c.id)} · ${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noreferrer">${esc(c.url.replace(/^https?:\/\//, ""))}</a>` : "주소 없음"}</div>
+                </td>
+                <td class="re ${r >= PER_CARD ? "full" : ""}">${r}<span style="color:var(--faint)">/${PER_CARD}</span></td>
+              </tr>`;
+            }).join("")
+          : `<tr><td colspan="3" style="color:var(--faint);padding:18px 6px">아직 등록된 카드가 없음</td></tr>`;
+
+        $("updated").textContent = new Date().toLocaleTimeString("ko-KR", {
+          hour: "2-digit", minute: "2-digit", second: "2-digit",
+        }) + " 기준";
+      }
+
+      function esc(s) {
+        return String(s ?? "").replace(/[&<>"]/g, (m) =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+      }
+
+      load();
+      setInterval(load, 10000);
+      window.addEventListener("focus", load);
+    </script>
+  </body>
+</html>
